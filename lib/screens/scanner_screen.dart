@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/api_service.dart';
+import '../services/log_service.dart';
 import 'result_screen.dart';
 import 'manual_input_screen.dart';
 import 'settings_screen.dart';
 
 class ScannerScreen extends StatefulWidget {
   final ApiService apiService;
+  final LogService logService;
 
-  const ScannerScreen({super.key, required this.apiService});
+  const ScannerScreen({super.key, required this.apiService, required this.logService});
 
   @override
   State<ScannerScreen> createState() => _ScannerScreenState();
@@ -121,19 +123,96 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 
   void _openSettings() async {
+    final granted = await _showPinDialog();
+    if (granted != true || !mounted) return;
+
     await _controller?.stop();
 
     if (!mounted) return;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => SettingsScreen(apiService: widget.apiService),
+        builder: (_) => SettingsScreen(
+          apiService: widget.apiService,
+          logService: widget.logService,
+        ),
       ),
     );
 
     if (mounted) {
       await _controller?.start();
     }
+  }
+
+  Future<bool?> _showPinDialog() {
+    final controller = TextEditingController();
+    String? errorText;
+
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: const Text('Ingrese clave'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    obscureText: true,
+                    maxLength: 4,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: '****',
+                      counterText: '',
+                      errorText: errorText,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onSubmitted: (_) {
+                      if (_validatePin(controller.text)) {
+                        Navigator.pop(ctx, true);
+                      } else {
+                        setDialogState(() => errorText = 'Clave incorrecta');
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_validatePin(controller.text)) {
+                      Navigator.pop(ctx, true);
+                    } else {
+                      setDialogState(() => errorText = 'Clave incorrecta');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0053E2),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Entrar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  bool _validatePin(String pin) {
+    final day = DateTime.now().day.toString().padLeft(2, '0');
+    final expectedPin = '00$day';
+    return pin == expectedPin;
   }
 
   @override

@@ -9,11 +9,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ticket_scanner/main.dart';
 import 'package:ticket_scanner/services/api_service.dart';
+import 'package:ticket_scanner/services/log_service.dart';
 
 void main() {
   testWidgets('App renders smoke test', (WidgetTester tester) async {
-    final apiService = ApiService();
-    await tester.pumpWidget(TicketScannerApp(apiService: apiService));
+    final logService = LogService();
+    final apiService = ApiService(logService: logService);
+    await tester.pumpWidget(TicketScannerApp(apiService: apiService, logService: logService));
     await tester.pumpAndSettle();
 
     expect(find.text('Ticket Scanner'), findsOneWidget);

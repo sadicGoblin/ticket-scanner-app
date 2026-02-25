@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'services/api_service.dart';
+import 'services/log_service.dart';
 import 'screens/scanner_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final apiService = ApiService();
+  final logService = LogService();
+  final apiService = ApiService(logService: logService);
   await apiService.init();
-  runApp(TicketScannerApp(apiService: apiService));
+  runApp(TicketScannerApp(apiService: apiService, logService: logService));
 }
 
 class TicketScannerApp extends StatelessWidget {
   final ApiService apiService;
+  final LogService logService;
 
-  const TicketScannerApp({super.key, required this.apiService});
+  const TicketScannerApp({super.key, required this.apiService, required this.logService});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +30,7 @@ class TicketScannerApp extends StatelessWidget {
         fontFamily: 'Roboto',
         useMaterial3: true,
       ),
-      home: ScannerScreen(apiService: apiService),
+      home: ScannerScreen(apiService: apiService, logService: logService),
     );
   }
 }
